@@ -1,5 +1,6 @@
 module Model exposing
     ( Field(..)
+    , FieldResponse(..)
     , Flags
     , Model
     , Msg(..)
@@ -10,16 +11,28 @@ module Model exposing
     , setTaxClassificationToIndividual
     , setTinOnTaxClassification
     , setTinTypeOnTaxClassification
+    , upsertFieldResponse
     )
+
+import FormModels exposing (..)
+import List.Extra as List
 
 
 type alias Model =
-    { taxClassification : TaxClassification }
+    { taxClassification : TaxClassification
+    , customFields : List Field
+    , fieldValues : List FieldResponse
+    }
 
 
 type Field
     = TinField
     | IndividualField
+    | MultipleChoiceField MultipleChoice
+
+
+type FieldResponse
+    = FieldResponse Field String
 
 
 type TinType
@@ -114,6 +127,7 @@ type Msg
     | SetCompany
     | SetTinValue String
     | SetTinType TinType
+    | SelectMultipleChoiceField Field String
 
 
 type alias Flags =
@@ -122,4 +136,30 @@ type alias Flags =
 
 initial : Model
 initial =
-    { taxClassification = Business (EIN_ "") }
+    { taxClassification = Business (EIN_ "")
+    , customFields =
+        [ MultipleChoiceField <| customField (FieldName "payment")
+        , MultipleChoiceField <| buildMultipleChoice (FieldName "different") [ "One", "Two", "Three" ]
+        ]
+    , fieldValues = []
+    }
+
+
+customField : FieldName -> MultipleChoice
+customField fieldName =
+    buildMultipleChoice fieldName [ "Check", "Wire transfer", "Other" ]
+
+
+upsertFieldResponse : Field -> String -> List FieldResponse -> List FieldResponse
+upsertFieldResponse field string responses =
+    case List.find (responseByField field) responses of
+        Nothing ->
+            responses ++ [ FieldResponse field string ]
+
+        Just _ ->
+            List.updateIf (responseByField field) (always <| FieldResponse field string) responses
+
+
+responseByField : Field -> FieldResponse -> Bool
+responseByField field (FieldResponse existingField _) =
+    field == existingField

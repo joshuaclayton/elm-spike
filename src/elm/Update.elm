@@ -38,3 +38,6 @@ update msg model =
             ( { model | taxClassification = setTinTypeOnTaxClassification tinType model.taxClassification }
             , Cmd.none
             )
+
+        SelectMultipleChoiceField field input ->
+            ( { model | fieldValues = upsertFieldResponse field input model.fieldValues }, Cmd.none )

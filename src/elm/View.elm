@@ -1,8 +1,10 @@
 module View exposing (view)
 
+import FormModels exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Json.Decode
 import Model exposing (..)
 
 
@@ -25,6 +27,10 @@ displayField model field =
                 , input [ type_ "radio", name "tin", value "0", checked <| currentTinType model == SSN, onClick <| SetTinType SSN ] []
                 ]
 
+        MultipleChoiceField mcField ->
+            select [ on "change" (Json.Decode.map (SelectMultipleChoiceField field) targetValue) ]
+                (List.map (\opt -> option [] [ text <| optionValue opt ]) <| multipleChoiceOptions mcField)
+
 
 
 -- Are you an individual?
@@ -41,4 +47,5 @@ view model =
         , displayField model TinField
         , displayField model IndividualField
         , input [ type_ "text", onInput SetTinValue ] []
+        , div [] (List.map (displayField model) model.customFields)
         ]
